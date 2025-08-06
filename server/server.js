@@ -8,61 +8,66 @@ import messageRouter from "./routes/messageRoutes.js";
 import { Server } from "socket.io";
 
 const app = express();
+const server = http.createServer(app);
 
-const server = http.createServer(app)
+// ✅ Allowed origins list
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://real-time-chat-application-ghjm.vercel.app"
+];
 
-//initialize socket.io server
+// ✅ Apply CORS for Express
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // allow Postman, curl, etc.
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true
+}));
+
+app.use(express.json({ limit: "4mb" }));
+
+// ✅ Initialize socket.io server with correct CORS
 export const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // ✅ same as frontend
-    credentials: true                // ✅ match client
+    origin: allowedOrigins,
+    credentials: true
   }
 });
 
-
-//store online users
+// ✅ Store online users
 export const userSocketMap = {};
 
-//socket.io connection handler
+// ✅ Handle socket connections
 io.on("connection", (socket) => {
   const userId = socket.handshake.query.userId;
-  console.log("User connected", userId);
+  console.log("User connected:", userId);
 
   if (userId) userSocketMap[userId] = socket.id;
 
-  // Emit online users to all connected clients
+  // Emit online users
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
-  // ✅ Correct disconnection handler
   socket.on("disconnect", () => {
-    console.log("User Disconnected", userId);
+    console.log("User disconnected:", userId);
     delete userSocketMap[userId];
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
 });
 
+// ✅ API routes
+app.use("/api/status", (req, res) => res.send("Server is live"));
+app.use("/api/auth", userRouter);
+app.use("/api/messages", messageRouter);
 
-app.use(express.json({limit:"4mb"}))
-app.use(cors({
-  origin: "http://localhost:5173", // frontend URL
-  credentials: true
-}));
-//Routes setup
-app.use("/api/status",(req,res)=>res.send("Server is live"))
-app.use("/api/auth",userRouter);
-app.use("/api/messages",messageRouter)
-
-
+// ✅ Start server
 await connectDB();
+
 const env = process.env.ENV || "development";
 if (env === "production") {
-  // ...
   const PORT = process.env.PORT || 5000;
-
-  server.listen(PORT,()=>console.log("Server is running on PORT:"+PORT));
+  server.listen(PORT, () => console.log("Server is running on PORT:", PORT));
 }
 
-
 export default server;
-
-
