@@ -1,11 +1,13 @@
-import jwt, { decode, verify } from "jsonwebtoken";
-import User from "../models/user";
+import jwt from "jsonwebtoken";
+const { decode, verify } = jwt;
+
+import User from "../models/user.js";
 
 export const protectRoute = async (req,res,next)=>{
   try{
     const token = req.headers.token;
 
-    const decoded = jwt.verify(token,process.env.JWT_SECREt)
+    const decoded = verify(token,process.env.JWT_SECRET);
 
     const user = await User.findById(decoded.userId).select("-password");
 
