@@ -3,7 +3,7 @@ import './index.css';
 import App from './App.jsx';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/authContext';
-import { ChatProvider } from './context/chatContext';
+import { ChatProvider } from './context/chatContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
